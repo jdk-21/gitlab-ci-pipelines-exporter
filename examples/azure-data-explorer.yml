@@ -1,0 +1,44 @@
+# Sample configuration for GitLab CI Pipelines Exporter with Azure Data Explorer integration
+
+log:
+  level: info
+  format: text
+
+# Azure Data Explorer configuration
+azure_data_explorer:
+  enabled: true
+  cluster_url: "https://mycluster.westus2.kusto.windows.net"
+  database: "gitlab_metrics"
+  table: "ci_pipeline_metrics"
+  auth_method: "managed_identity"  # or "client_credentials" or "device_code"
+  # For client credentials authentication:
+  # client_id: "your-client-id"
+  # client_secret: "your-client-secret"
+  # tenant_id: "your-tenant-id"
+  batch_size: 1000
+  flush_interval_seconds: 30
+
+# Server configuration
+server:
+  listen_address: ":8080"
+  metrics:
+    enabled: true
+  webhook:
+    enabled: false
+
+# GitLab configuration
+gitlab:
+  url: "https://gitlab.example.com"
+  token: "your-gitlab-token"
+  maximum_requests_per_second: 5
+
+# Projects to monitor
+projects:
+  - name: "group/project1"
+  - name: "group/project2"
+
+# Optional: Wildcards to automatically discover projects
+wildcards:
+  - owner:
+      name: "my-group"
+      kind: "group"

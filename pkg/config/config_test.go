@@ -16,6 +16,17 @@ func TestNew(t *testing.T) {
 
 	c.OpenTelemetry.GRPCEndpoint = ""
 
+	c.AzureDataExplorer.Enabled = false
+	c.AzureDataExplorer.ClusterURL = ""
+	c.AzureDataExplorer.Database = ""
+	c.AzureDataExplorer.Table = ""
+	c.AzureDataExplorer.AuthMethod = "managed_identity"
+	c.AzureDataExplorer.ClientID = ""
+	c.AzureDataExplorer.ClientSecret = ""
+	c.AzureDataExplorer.TenantID = ""
+	c.AzureDataExplorer.BatchSize = 1000
+	c.AzureDataExplorer.FlushIntervalSeconds = 30
+
 	c.Server.ListenAddress = ":8080"
 	c.Server.Metrics.Enabled = true
 

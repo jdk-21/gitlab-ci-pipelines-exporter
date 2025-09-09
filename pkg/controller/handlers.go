@@ -13,6 +13,8 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/mvisonneau/gitlab-ci-pipelines-exporter/pkg/schemas"
 )
 
 // HealthCheckHandler ..
@@ -55,6 +57,23 @@ func (c *Controller) MetricsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	registry.ExportMetrics(metrics)
+
+	// Send metrics to Azure Data Explorer if enabled
+	if c.ADXClient != nil {
+		go func() {
+			// Convert the metrics map to a slice
+			var adxMetrics []schemas.Metric
+			for _, metric := range metrics {
+				adxMetrics = append(adxMetrics, metric)
+			}
+			
+			if err := c.ADXClient.SendMetrics(ctx, adxMetrics); err != nil {
+				log.WithContext(ctx).
+					WithError(err).
+					Warn("failed to send metrics to Azure Data Explorer")
+			}
+		}()
+	}
 
 	otelhttp.NewHandler(
 		promhttp.HandlerFor(registry, promhttp.HandlerOpts{

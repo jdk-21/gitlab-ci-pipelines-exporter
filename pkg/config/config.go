@@ -23,6 +23,9 @@ type Config struct {
 	// OpenTelemetry configuration
 	OpenTelemetry OpenTelemetry `yaml:"opentelemetry"`
 
+	// Azure Data Explorer configuration
+	AzureDataExplorer AzureDataExplorer `yaml:"azure_data_explorer"`
+
 	// Server related configuration
 	Server Server `yaml:"server"`
 
@@ -61,6 +64,39 @@ type Log struct {
 type OpenTelemetry struct {
 	// gRPC endpoint of the opentelemetry collector
 	GRPCEndpoint string `yaml:"grpc_endpoint"`
+}
+
+// AzureDataExplorer related configuration.
+type AzureDataExplorer struct {
+	// Enable Azure Data Explorer integration
+	Enabled bool `default:"false" yaml:"enabled"`
+
+	// Azure Data Explorer cluster URL (e.g., https://mycluster.region.kusto.windows.net)
+	ClusterURL string `validate:"required_if=Enabled true,omitempty,url" yaml:"cluster_url"`
+
+	// Database name to ingest data into
+	Database string `validate:"required_if=Enabled true,omitempty" yaml:"database"`
+
+	// Table name to ingest data into
+	Table string `validate:"required_if=Enabled true,omitempty" yaml:"table"`
+
+	// Authentication method: "managed_identity", "client_credentials", or "device_code"
+	AuthMethod string `default:"managed_identity" validate:"required_if=Enabled true,omitempty,oneof=managed_identity client_credentials device_code" yaml:"auth_method"`
+
+	// Client ID for client credentials auth (optional for managed identity)
+	ClientID string `yaml:"client_id"`
+
+	// Client Secret for client credentials auth
+	ClientSecret string `validate:"required_if=AuthMethod client_credentials,omitempty" yaml:"client_secret"`
+
+	// Tenant ID for authentication
+	TenantID string `yaml:"tenant_id"`
+
+	// Batch size for ingestion (number of metrics to batch together)
+	BatchSize int `default:"1000" validate:"gte=1" yaml:"batch_size"`
+
+	// Interval in seconds to flush batched metrics
+	FlushIntervalSeconds int `default:"30" validate:"gte=1" yaml:"flush_interval_seconds"`
 }
 
 // Server ..

@@ -108,6 +108,11 @@ func Run(cliCtx *cli.Context) (int, error) {
 		return 1, err
 	}
 
+	// Close the controller to clean up resources
+	if err := c.Close(); err != nil {
+		log.WithError(err).Warn("error while closing controller")
+	}
+
 	log.Info("stopped!")
 
 	return 0, nil

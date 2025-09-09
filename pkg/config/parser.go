@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/creasty/defaults"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,6 +49,13 @@ func Parse(f Format, bytes []byte) (cfg Config, err error) {
 	default:
 		err = fmt.Errorf("unsupported config type '%+v'", f)
 	}
+
+	if err != nil {
+		return
+	}
+
+	// Apply defaults to any unset fields
+	defaults.MustSet(&cfg)
 
 	// hack: automatically update the cfg.GitLab.HealthURL for self-hosted GitLab
 	if cfg.Gitlab.URL != "https://gitlab.com" &&
