@@ -16,6 +16,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 
+	"github.com/mvisonneau/gitlab-ci-pipelines-exporter/pkg/adx"
 	"github.com/mvisonneau/gitlab-ci-pipelines-exporter/pkg/config"
 	"github.com/mvisonneau/gitlab-ci-pipelines-exporter/pkg/gitlab"
 	"github.com/mvisonneau/gitlab-ci-pipelines-exporter/pkg/ratelimit"
@@ -32,6 +33,7 @@ type Controller struct {
 	Gitlab         *gitlab.Client
 	Store          store.Store
 	TaskController TaskController
+	ADXClient      *adx.Client
 
 	// UUID is used to identify this controller/process amongst others when
 	// the exporter is running in cluster mode, leveraging Redis.
@@ -44,6 +46,12 @@ func New(ctx context.Context, cfg config.Config, version string) (c Controller, 
 	c.UUID = uuid.New()
 
 	if err = configureTracing(ctx, cfg.OpenTelemetry.GRPCEndpoint); err != nil {
+		return
+	}
+
+	// Initialize Azure Data Explorer client
+	c.ADXClient, err = adx.NewClient(ctx, cfg.AzureDataExplorer)
+	if err != nil {
 		return
 	}
 
@@ -154,6 +162,34 @@ func configureTracing(ctx context.Context, grpcEndpoint string) error {
 
 	otel.SetTracerProvider(tracerProvider)
 
+	return nil
+}
+
+// Close gracefully closes the controller and its clients.
+func (c *Controller) Close() error {
+	log.Info("closing controller")
+	
+	var closeErrors []error
+
+	// Close ADX client
+	if c.ADXClient != nil {
+		if err := c.ADXClient.Close(); err != nil {
+			closeErrors = append(closeErrors, err)
+		}
+	}
+
+	// Close Redis client
+	if c.Redis != nil {
+		if err := c.Redis.Close(); err != nil {
+			closeErrors = append(closeErrors, err)
+		}
+	}
+
+	if len(closeErrors) > 0 {
+		return closeErrors[0] // Return the first error
+	}
+
+	log.Info("controller closed successfully")
 	return nil
 }
 
